@@ -497,6 +497,48 @@ async def stockPrice(ctx, arg):
     except (TypeError, KeyError, IndexError) as err:
         await ctx.send(f'Couldn\'t get price of {str(arg).upper()}')
 
+
+@bot.command(
+    name='calendar',
+    help='Daily financial calendar'
+)
+async def calendar(ctx):
+    try:
+        options = FirefoxOptions()
+        options.headless = True
+        browser = webdriver.Firefox(options=options)
+        browser.maximize_window()
+        browser.get('https://www.investing.com/economic-calendar/')
+        sleep(2)
+        btn = browser.find_element_by_xpath('//*[@id="onetrust-accept-btn-handler"]')
+        btn.click()
+        sleep(1)
+        element = browser.find_element('xpath', '//*[@id="economicCalendarData"]')
+        location = element.location
+        size = element.size
+        total_height = element.size["height"]+1000
+        browser.set_window_size(1920, total_height)
+        sleep(1)
+        png = browser.get_screenshot_as_png()
+        browser.quit()
+        img = Image.open(BytesIO(png))
+        arr = BytesIO()
+
+        left = location['x'] + 270
+        top = location['y']
+        right = location['x'] + 290 + size['width']
+        bottom = location['y'] + 50 + size['height']
+
+        img = img.crop((math.floor(left), math.floor(top), math.ceil(right), math.ceil(bottom)))
+
+        img.save(arr, format='PNG')
+        arr.seek(0)
+        picture = discord.File(arr, 'apes.png')
+    except NoSuchElementException:
+        picture = None
+
+    await bot.get_channel(905064474380214335).send(file=picture)
+
 @bot.event
 async def on_ready():
     print('We have logged in as {0.user}'.format(bot))
